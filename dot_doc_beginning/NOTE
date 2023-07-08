@@ -1,0 +1,106 @@
+This folder contains all header files that outline the header
+and the FIB section of the Word Document Binary file.
+
+SPECIFICS:
+
+Slang:
+    WDBF - Word Document Binary File
+
+Types (definitions found in `common.hpp`):
+    nt          - normal type (not explicitly signed or unsigned)
+    ut          - unsigned type (explicitly unsigned)
+    st          - signed type (explicitly signed)
+
+    Following specification below, `xx` stands for `nt`, `ut` or `st`.
+        Example for reference:
+            `xx_BYTE_PTR` refers to `nt_BYTE_PTR`, `ut_BYTE_PTR` and `st_BYTE_PTR`.
+            `xx_BYTE` in `value = (xx_BYTE *)` or `value = (const xx_BYTE *)` stand for `nt_BYTE`, `ut_BYTE` and `st_BYTE`.
+
+    nt_BYTE     - char
+    ut_BYTE     - unsigned char
+    st_BYTE     - signed char
+        xx_BYTE_PTR     - xx_BYTE pointer cast; value = (xx_BYTE *)
+        xx_BYTE_CPTR    - xx_BYTE const pointer cast; value = (const xx_BYTE *)
+
+    nt_WORD     - short
+    ut_WORD     - unsigned short
+    st_WORD     - signed short
+        xx_WORD_PTR     - xx_WORD pointer cast; value = (xx_WORD *)
+        xx_WORD_CPTR    - xx_WORD const pointer cast; value = (const xx_WORD *)
+    
+    nt_DWORD    - int
+    ut_DWORD    - unsigned int
+    st_DWORD    - signed int
+        xx_DWORD_PTR    - xx_DWORD pointer cast; value = (xx_DWORD *)
+        xx_DWORD_CPTR   - xx_DWORD const pointer cast; value = (const xx_DWORD *)
+    
+    nt_LBYTE    - long
+    ut_LBYTE    - unsigned long
+    st_LBYTE    - signed long
+        xx_LBYTE_PTR    - xx_LBYTE pointer cast; value = (xx_LBYTE *)
+        xx_LBYTE_CPTR   - xx_LBYTE const pointer cast; value = (const xx_LBYTE *)
+    
+    nt_LLBYTE   - long long
+    ut_LLBYTE   - unsigned long long
+    st_LLBYTe   - signed long long
+        xx_LLBYTE_PTR   - xx_LLBYTE pointer cast; value = (xx_LLBYTE *)
+        xx_LLBYTE_CPTR  - xx_LLBYTE const pointer cast; value = (const xx_LLBYTE *)
+    
+    ut_LSIZE    - ut_LLBYTE (unsigned long long)
+        ut_LSIZE_PTR    - ut_LSIZE pointer cast; value = (ut_LSIZE *)
+        ut_LSIZE_CPTR   - ut_LSIZE const pointer cast; value = (const ut_LSIZE *)
+    
+    bool        - ut_BYTE (unsigned char)
+        true            - 1
+        false           - 0
+
+Custom Error System:
+    error_type - Enum storing all possible errors that can be thrown during runtime
+        invalid_doc_file_header_sig (0xE0) - There was an invalid value in the WDBF header signature; signature represented by `D0 CF 11 E0 A1 B1 1A E1`.
+
+        invalid_doc_file_padding (0xE2) - There was an invalid padding value; padding is normally represented by `FF FF FF FF` (free sector) or zeroes.
+
+        invalid_CFB_minor_version (0xE4) - The minor version for the WDBF was invalid; the CFB minor version should have the value `3E 00`.
+
+        invalid_CFB_major_version (0xE6) - The major version for the WDBF was invalid; the CFB major version should be `03 00` for Major Version 3 or `04 00` for Major Version 4
+
+        invalid_CFB_little_endian_indication - The indication of using little endian was invalid; for all Word Documents, the binary file will use little endian; the indication should be presented via `FE FF`.
+
+        invalid_CFB_sector_size_indication - The sector size indication was invalid, either due to an invalid value altogether or it does not much the sector size in accordance to the major version; the CFB sector size indication will be `09 00` for Major Version 3, indicating 512-byte sectors otherwise it will be `0C 00` for Major Version 4, indicating 4096-byte sectors.
+
+        no_error - There was no error; default state for `error_tracker`.
+    
+    error_tracker - Structure containing information over the current error, the previous error, how many times the program has thrown some sort of exception over the same issue, the amount of errors/exceptions thrown and whether or not all of the errors could be fixed.
+        enum error_type current_error - The error/exception that is currently being raised.
+
+        enum error_type previous_error - The last error/exception that got raised; `previous_error`, when `encountered_error` is invoked, will be checked against the error getting passed as an argument and, upon the error passed via `encountered_error` being the same as `previous_error` the exception will be "appended".
+
+        ut_BYTE same_error_count - When the program runs into the same error more than once, it will increment `same_error_count` and, upon the error continuously being raised the program will be capable of displaying the "appended" exception number.
+            For example:
+                The error `invalid_doc_file_padding` gets raised 3 times in a row, the terminal will thus look like:
+                [PADDING ERROR]         [error message]
+                    [EXCEPTION #1]      [appended error message]
+                    [EXCEPTION #2]      [appended error message]
+        
+        ut_WORD err_count - The amount of errors encountered, alongside the "appended" errors.
+
+        bool all_errors_fixed - If the program is capable of fixing an error, this will continue to be `true` otherwise, if the program runs into a error it cannot fix `all_errors_fixed` will be set to false.
+            Once `all_errors_fixed` is set to `false`, it cannot be set back to `true`.
+        
+        ut_BYTE error_msg[400] - The error message to be printed; has a max length of 400 characters. 
+
+DotDoc_Header - class that deals with all ideals having to do with the WDBF header.
+    Variables:
+        const ut_BYTE dot_doc_header_sig (private): WDBF header signature; first 4 hex values represent "DOCFILE".
+    
+    Private Functions:
+        void get_WDBF_heading_sig() - `DotDoc_Header` private class method invoked via the `gather_WDBF_heading` method that will obtain the 8-byte heading signature.
+
+    Public Functions:
+        DotDoc_Header(ut_BYTE *filename) - Class constructor. Initiates `FileAPI` class pointer, performs assertion to make sure the initilization ocurred as expected.
+
+        gather_WDBF_heading() - `DotDoc_Header` class method that invokes all calls to private functions that will end up reading, and obtaining, the heading of the WDBF.
+        
+        ~DotDoc_Header() & delete_instance(DotDoc_Header *dheader) -
+            ~DotDoc_Header() is the class destructor. Deletes the instance of `FileAPI` and sets it to `nullptr`.
+            delete_instance(DotDoc_Header *dheader) is a class method that takes in an instance of `DotDoc_Header` and performs according actions that takes place in the destructor.
