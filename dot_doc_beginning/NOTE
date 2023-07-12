@@ -68,6 +68,10 @@ Custom Error System:
 
         invalid_CFB_sector_size_indication - The sector size indication was invalid, either due to an invalid value altogether or it does not much the sector size in accordance to the major version; the CFB sector size indication will be `09 00` for Major Version 3, indicating 512-byte sectors otherwise it will be `0C 00` for Major Version 4, indicating 4096-byte sectors.
 
+        invalid_CFB_mini_stream_sector_size - The Mini Stream sector size indication was invalid; the Mini Stream sector size should always be referenced by `06 00`.
+
+        invalid_CFB_dir_sector_count - The count for the number of Directory sectors was no zero; this error only happens if the Major Version is 3.
+        
         no_error - There was no error; default state for `error_tracker`.
     
     error_tracker - Structure containing information over the current error, the previous error, how many times the program has thrown some sort of exception over the same issue, the amount of errors/exceptions thrown and whether or not all of the errors could be fixed.

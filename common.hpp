@@ -57,8 +57,11 @@ extern "C"
     #define st_LLBYTE_CPTR		(const st_LLBYTE *)
 
     typedef ut_LLBYTE			ut_LSIZE;
+    typedef nt_LLBYTE           nt_LSIZE;
     #define ut_LSIZE_PTR		(ut_LSIZE *)
     #define ut_LSIZE_CPTR		(const ut_LSIZE *)
+    #define nt_LSIZE_PTR        (nt_LSIZE *)
+    #define nt_LSIZE_CPTR       (const nt_LSIZE *)
 
     #ifndef __cplusplus
     typedef ut_BYTE				bool;
@@ -113,6 +116,7 @@ extern "C"
  * I am the only one that will ever use this function, so I don't care too much about safety.
  * */
 template<typename RT, typename IT>
+    requires std::integral<RT> && std::integral<IT>
 RT merge_bytes(IT byte1, IT byte2)
 {
     RT ret_value = 0;
@@ -135,9 +139,10 @@ RT merge_bytes(IT byte1, IT byte2)
     return ret_value;
 }
 
-/* Convert endianess. Sometimes `merge_bytes` will return in big endian. */
+/* Convert endianess if a hexadecimal value is received in big-endian. */
 template<typename T>
-T little_endian(T value)
+    requires std::integral<T>
+T convert_endian(T value)
 {
     switch(sizeof(value))
     {
@@ -151,12 +156,17 @@ T little_endian(T value)
             break;
         }
         case 4: {
-            ut_WORD byte1 = (value >> 16);
-            ut_WORD byte2 = (value >> 24);
+            ut_BYTE byte1 = (value >> 0)  & 0x000000FF;
+            ut_BYTE byte2 = (value >> 8)  & 0x000000FF;
+            ut_BYTE byte3 = (value >> 16) & 0x000000FF;
+            ut_BYTE byte4 = (value >> 24) & 0x000000FF;
 
             value ^= value;
             value |= byte1;
-            value = (value << 16) | byte2;
+            value = (value << 8) | byte2;
+            value = (value << 8) | byte3;
+            value = (value << 8) | byte4;
+
             break;
         }
         default: break;

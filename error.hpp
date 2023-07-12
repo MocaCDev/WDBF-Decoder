@@ -4,11 +4,13 @@
 enum error_type
 {
     invalid_doc_file_header_sig = 0xE0,
-    invalid_doc_file_padding = 0xE2,
-    invalid_CFB_minor_version = 0xE4,
-    invalid_CFB_major_version = 0xE6,
-    invalid_CFB_little_endian_indication = 0xE8,
-    invalid_CFB_sector_size_indication = 0xEA,
+    invalid_doc_file_padding = 0xE1,
+    invalid_CFB_minor_version = 0xE2,
+    invalid_CFB_major_version = 0xE3,
+    invalid_CFB_little_endian_indication = 0xE4,
+    invalid_CFB_sector_size_indication = 0xE5,
+    invalid_CFB_mini_stream_sector_size = 0xE6,
+    invalid_CFB_dir_sector_count = 0xE7,
     no_error = 0x0
 };
 
@@ -123,5 +125,11 @@ struct error_tracker
 };
 
 static struct error_tracker *err_tracker = new struct error_tracker;
+
+#define dot_doc_raise_exception(errID, is_fixable, msg, ...)                        \
+{                                                                                   \
+    sprintf(nt_BYTE_PTR err_tracker->error_msg, nt_BYTE_CPTR msg, ##__VA_ARGS__);   \
+    err_tracker->raise_error(errID, is_fixable);                                    \
+}
 
 #endif
